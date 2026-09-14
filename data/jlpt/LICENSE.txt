@@ -1,0 +1,19 @@
+JLPT 词汇表数据许可与来源
+==========================
+
+数据文件：JLPT_vocab_ALL.json
+
+原始数据来源：
+  https://www.tanos.co.uk/jlpt/  （Jonathan Waller 整理）
+
+整理 / 格式转换：
+  https://github.com/Bluskyo/JLPT_Vocabulary
+
+许可协议：Creative Commons Attribution (CC BY)
+  https://creativecommons.org/licenses/by/3.0/
+
+署名要求：在分发或衍生使用本数据时，须注明原作者 Jonathan Waller
+（tanos.co.uk）。本项目在 README.md 及本文件中保留该署名。
+
+说明：本词表仅包含词汇等级标注信息（词形 / 读音 -> JLPT 等级），
+不含任何歌词原文，符合项目「不存储、不分发完整歌词原文」的合规约定。

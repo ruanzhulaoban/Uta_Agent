@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """标注编排层：把原始歌词文本转换为结构化的行/词标注数据。
 
-输出结构（当前第一阶段，对应需求 1、2 点）：
+输出结构（当前第一阶段，对应需求 1、2、3 点）：
 
     {
       "analyzer": {...},
@@ -13,31 +13,48 @@
           "words": [
             {"surface": "...", "reading": "...", "romaji": "...",
              "pos": "...", "pos1": "...", "base": "...",
-             "conjugation_type": "...", "conjugation_form": "..."}
+             "conjugation_type": "...", "conjugation_form": "...",
+             "jlpt": "N5"}
           ]
         }
       ]
     }
 
-后续阶段会在 word 层继续补充 ``jlpt``、``gloss``、``grammar`` 字段。
+后续阶段会在 word 层继续补充 ``gloss``、``grammar`` 字段。
 """
 
 from __future__ import annotations
 
 from typing import Dict, List, Optional
 
+from .jlpt import JlptTagger
 from .kana import PUNCT_ROMAN, katakana_to_hiragana, to_romaji
 from .mecab import MeCab, Token
 
 # 标注数据格式版本
 SCHEMA_VERSION = "0.1.0"
 
+# 虚词 / 符号不参与 JLPT 等级标注（词表中不含这些功能词）
+_FUNCTION_POS = {"助詞", "助動詞", "記号", "フィラー", "その他"}
+
 
 class Annotator:
-    """歌词标注器。"""
+    """歌词标注器。
 
-    def __init__(self, mecab: Optional[MeCab] = None):
+    ``jlpt`` 参数：
+      - ``None``（默认）：使用内置 JLPT 词表；
+      - ``False``：禁用 JLPT 等级标注；
+      - 传入 ``JlptTagger`` 实例：使用自定义词表。
+    """
+
+    def __init__(self, mecab: Optional[MeCab] = None, jlpt: Optional[JlptTagger] = None):
         self.mecab = mecab or MeCab()
+        if jlpt is None:
+            self.jlpt = JlptTagger()
+        elif jlpt is False:
+            self.jlpt = None
+        else:
+            self.jlpt = jlpt
 
     def annotate(self, text: str) -> Dict:
         """标注整段歌词文本。"""
@@ -73,8 +90,10 @@ class Annotator:
         if t.is_unknown:
             reading = t.surface
             romaji = PUNCT_ROMAN.get(t.surface, "")
+            reading_hira = None
         else:
-            reading = katakana_to_hiragana(t.reading)
+            reading_hira = katakana_to_hiragana(t.reading)
+            reading = reading_hira
             # 罗马音用「発音」字段生成，能正确反映实际读音
             # （如助词 は -> wa、长音 ガッコウ -> ガッコー -> gakkō）
             pron = t.pron if t.pron not in ("", "*") else t.reading
@@ -89,4 +108,21 @@ class Annotator:
             "base": t.base or None,
             "conjugation_type": t.ctype or None,
             "conjugation_form": t.cform or None,
+            "jlpt": self._jlpt_level(t, reading_hira),
         }
+
+    def _jlpt_level(self, t: Token, reading_hira: Optional[str]) -> Optional[str]:
+        """按 原形 -> 表層形 -> 读音 的顺序查 JLPT 等级。"""
+        if self.jlpt is None:
+            return None
+        if t.pos in _FUNCTION_POS:
+            return None
+        base = t.base if t.base not in ("", "*") else None
+        if base:
+            level = self.jlpt.lookup(form=base, reading=reading_hira)
+            if level:
+                return level
+        level = self.jlpt.lookup(form=t.surface, reading=reading_hira)
+        if level:
+            return level
+        return self.jlpt.lookup(reading=reading_hira)

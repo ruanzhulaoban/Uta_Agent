@@ -9,6 +9,7 @@
 
 from .kana import to_romaji, katakana_to_hiragana, hiragana_to_katakana
 from .mecab import MeCab, Token, find_mecab
+from .jlpt import JlptTagger
 from .annotator import Annotator
 
 __version__ = "0.1.0"
@@ -18,6 +19,7 @@ __all__ = [
     "MeCab",
     "Token",
     "find_mecab",
+    "JlptTagger",
     "to_romaji",
     "katakana_to_hiragana",
     "hiragana_to_katakana",
