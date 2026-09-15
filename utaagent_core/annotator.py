@@ -20,7 +20,7 @@
       ]
     }
 
-后续阶段会在 word 层继续补充 ``gloss``、``grammar`` 字段。
+Glossifier 在词层补充 gloss/source，在行层补充 grammar 与处理状态。
 """
 
 from __future__ import annotations
