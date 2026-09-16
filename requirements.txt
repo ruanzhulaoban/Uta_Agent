@@ -1,0 +1,2 @@
+# Python >= 3.9; HTTP uses urllib, no provider SDK required.
+jsonschema>=4.18,<5

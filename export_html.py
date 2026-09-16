@@ -7,7 +7,7 @@ from utaagent_core.html_export import THEMES, load_songs, load_manifest, render_
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="标注 JSON → 单文件 HTML 歌词书（无需模型调用）")
-    parser.add_argument("inputs", nargs="*", help="一个或多个 0.5.0 标注 JSON")
+    parser.add_argument("inputs", nargs="*", help="一个或多个 0.5.0/0.6.0 标注 JSON")
     parser.add_argument("--manifest", help="多曲目出版配置 JSON")
     parser.add_argument("--output", "-o", required=True, help="输出 .html 路径")
     parser.add_argument("--theme", choices=THEMES, default="bunko")
@@ -35,7 +35,7 @@ def main(argv=None):
         print("已导出 " + str(len(songs)) + " 首歌：" + str(output.resolve()), file=sys.stderr)
         return 0
     except (OSError, ValueError, TypeError, KeyError, ValidationError) as exc:
-        print("HTML 导出失败：" + (str(exc) if not isinstance(exc, ValidationError) else "标注 JSON 不符合 0.5.0 Schema"),
+        print("HTML 导出失败：" + (str(exc) if not isinstance(exc, ValidationError) else "标注 JSON 不符合支持的标注 Schema"),
               file=sys.stderr)
         return 2
 

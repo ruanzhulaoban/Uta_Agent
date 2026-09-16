@@ -1,0 +1,355 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "0.6.0"
+    },
+    "analyzer": {
+      "type": "object"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string"
+          },
+          "reading": {
+            "type": "string"
+          },
+          "romaji": {
+            "type": "string"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pos": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pos1": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "base": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conjugation_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conjugation_form": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "jlpt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "surface": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reading": {
+                  "type": "string"
+                },
+                "romaji": {
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "grammar_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^b[0-9]+:g[0-9]+$"
+                  }
+                },
+                "gloss": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "dict",
+                    "llm",
+                    "pending",
+                    "symbol"
+                  ]
+                }
+              },
+              "required": [
+                "surface",
+                "reading",
+                "pos",
+                "jlpt",
+                "gloss",
+                "source",
+                "index",
+                "grammar_ids"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "index",
+          "text",
+          "words"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "grammar": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "pattern": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "meaning": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "connection": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "explanation": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "context_usage": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "word_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "line_index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "word_index": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "line_index",
+                      "word_index"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1
+                },
+                "source": {
+                  "const": "llm"
+                }
+              },
+              "required": [
+                "id",
+                "text",
+                "pattern",
+                "meaning",
+                "connection",
+                "explanation",
+                "context_usage",
+                "word_refs",
+                "source"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "llm": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "enum": [
+                  "ok",
+                  "cached",
+                  "pending",
+                  "disabled",
+                  "empty"
+                ]
+              },
+              "output_mode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "status",
+              "output_mode",
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "line_indices",
+          "grammar",
+          "llm"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "dictionary": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "llm": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "requested_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effective_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cache_hits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "last_error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validation": {
+          "const": "passed"
+        }
+      },
+      "required": [
+        "enabled",
+        "model",
+        "requested_mode",
+        "effective_mode",
+        "calls",
+        "cache_hits",
+        "failures",
+        "last_error",
+        "validation"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "lines",
+    "blocks",
+    "dictionary",
+    "llm"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

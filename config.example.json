@@ -1,0 +1,10 @@
+{
+  "model": "qwen-plus",
+  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "api_key_env": "DASHSCOPE_API_KEY",
+  "output_mode": "auto",
+  "timeout": 60,
+  "retries": 1,
+  "cache_path": "data/cache/gloss_cache.json",
+  "extra_body": {}
+}

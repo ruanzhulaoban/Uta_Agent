@@ -1,0 +1,99 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "analyzer": {
+      "type": "object"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "reading": {
+            "type": "string"
+          },
+          "romaji": {
+            "type": "string"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pos": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pos1": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "base": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conjugation_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conjugation_form": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "jlpt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "surface": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reading": {
+                  "type": "string"
+                },
+                "romaji": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "surface",
+                "reading",
+                "pos",
+                "jlpt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "text",
+          "words"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "lines"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

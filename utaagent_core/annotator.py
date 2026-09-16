@@ -30,6 +30,7 @@ from typing import Dict, List, Optional
 from .jlpt import JlptTagger
 from .kana import PUNCT_ROMAN, katakana_to_hiragana, to_romaji
 from .mecab import MeCab, Token
+from .text_kind import is_latin_text
 
 # 标注数据格式版本
 SCHEMA_VERSION = "0.1.0"
@@ -86,6 +87,10 @@ class Annotator:
         }
 
     def _annotate_token(self, t: Token) -> Dict:
+        if is_latin_text(t.surface):
+            return dict(surface=t.surface, reading=t.surface, romaji=t.surface,
+                        pos=t.pos or None, pos1=t.pos1 or None, base=t.surface,
+                        conjugation_type=None, conjugation_form=None, jlpt=None)
         # 读音未知（如标点、未知词）：读音取表層形，罗马音查标点表
         if t.is_unknown:
             reading = t.surface

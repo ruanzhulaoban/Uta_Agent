@@ -21,6 +21,7 @@ from typing import List, Optional
 # 注意：这里的 \t / \n 是字面转义（meCab 自己解释），因此用原始字符串；
 # 末尾的 \n 必不可少，否则同一行的多个词条会被拼接成一行。
 _NODE_FORMAT = r"%m\t%f[0]\t%f[1]\t%f[2]\t%f[3]\t%f[4]\t%f[5]\t%f[6]\t%f[7]\t%f[8]\n"
+_UNKNOWN_FORMAT = r"%m\t%f[0]\t%f[1]\t%f[2]\t%f[3]\t%f[4]\t%f[5]\t%m\t*\t*\n"
 
 # EOS 哨兵：用不易与歌词冲突的字符串，便于按行切分结果。
 _EOS = "__UTAAGENT_EOS__"
@@ -99,7 +100,7 @@ class MeCab:
             cmd += ["-d", self.dicdir]
         cmd += [
             "--node-format=" + _NODE_FORMAT,
-            "--unk-format=" + _NODE_FORMAT,
+            "--unk-format=" + _UNKNOWN_FORMAT,
             "--eos-format=" + _EOS + r"\n",
         ]
         return cmd

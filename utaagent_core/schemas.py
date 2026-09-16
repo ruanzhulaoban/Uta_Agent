@@ -1,4 +1,5 @@
 """JSON Schema and cross-field validation for bounded lyric blocks."""
+from copy import deepcopy
 from jsonschema import Draft202012Validator
 from .blocks import MAX_LINES
 
@@ -19,6 +20,7 @@ WORD_REFS = dict(array(WORD_REF), minItems=1)
 GLOSS_SCHEMA = obj({
     "words": array(obj({"line_index": INDEX, "word_index": INDEX, "gloss": NONEMPTY})),
     "grammar": array(obj({"text": NONEMPTY, "pattern": NONEMPTY, "meaning": NONEMPTY,
+                          "connection": NONEMPTY, "explanation": NONEMPTY, "context_usage": NONEMPTY,
                           "word_refs": WORD_REFS})),
 })
 WORD_FIELDS = {k: NS for k in ("pos", "pos1", "base", "conjugation_type", "conjugation_form", "jlpt")}
@@ -33,7 +35,7 @@ FINAL_WORD = obj(dict(WORD_FIELDS, index=INDEX,
 BLOCK_STATUS = obj({"status": {"enum": ["ok", "cached", "pending", "disabled", "empty"]},
                     "output_mode": NS, "error": NS})
 FINAL_SCHEMA = obj({
-    "schema_version": {"const": "0.5.0"},
+    "schema_version": {"const": "0.6.0"},
     "analyzer": {"type": "object"},
     "lines": array(obj({"index": INDEX, "text": S, "reading": S, "romaji": S,
                         "words": array(FINAL_WORD)}, ["index", "text", "words"])),
@@ -41,7 +43,8 @@ FINAL_SCHEMA = obj({
         "id": INDEX,
         "line_indices": dict(array(INDEX), minItems=1, maxItems=MAX_LINES),
         "grammar": array(obj({"id": INDEX, "text": NONEMPTY, "pattern": NONEMPTY,
-                              "meaning": NONEMPTY, "word_refs": WORD_REFS, "source": {"const": "llm"}})),
+                              "meaning": NONEMPTY, "connection": NONEMPTY, "explanation": NONEMPTY,
+                              "context_usage": NONEMPTY, "word_refs": WORD_REFS, "source": {"const": "llm"}})),
         "llm": BLOCK_STATUS})),
     "dictionary": {"anyOf": [obj({"name": S, "version": S}), {"type": "null"}]},
     "llm": obj({"enabled": {"type": "boolean"}, "model": NS, "requested_mode": NS,
@@ -49,9 +52,25 @@ FINAL_SCHEMA = obj({
                 "last_error": NS, "validation": {"const": "passed"}}),
 }, ["schema_version", "lines", "blocks", "dictionary", "llm"])
 
+# Export-only compatibility: never treat old responses as complete new lessons.
+LEGACY_FINAL_SCHEMA = deepcopy(FINAL_SCHEMA)
+LEGACY_FINAL_SCHEMA["properties"]["schema_version"] = {"const": "0.5.0"}
+_legacy_point = LEGACY_FINAL_SCHEMA["properties"]["blocks"]["items"]["properties"]["grammar"]["items"]
+for _key in ("connection", "explanation", "context_usage"):
+    _legacy_point["properties"].pop(_key)
+    _legacy_point["required"].remove(_key)
+
+def validate_export_document(document):
+    schema = LEGACY_FINAL_SCHEMA if document.get("schema_version") == "0.5.0" else FINAL_SCHEMA
+    validate(document, schema)
+
+def _validate_lesson(point):
+    if "".join(point["explanation"].split()) == "".join(point["meaning"].split()):
+        raise ValueError("语法用法说明不能只重复核心含义或翻译")
+
 def validate(value, schema):
     Draft202012Validator(schema).validate(value)
-    if schema is FINAL_SCHEMA:
+    if schema is FINAL_SCHEMA or schema is LEGACY_FINAL_SCHEMA:
         validate_references(value)
 
 def _pairs(refs, lines, words_key):
@@ -83,6 +102,7 @@ def validate_result(result, payload):
     if set(actual) != set(expected):
         raise ValueError("释义必须完整、唯一地覆盖 targets")
     for grammar in result["grammar"]:
+        _validate_lesson(grammar)
         _pairs(grammar["word_refs"], lines, "tokens")
         _check_text(grammar["text"], lines)
 
@@ -114,6 +134,8 @@ def validate_references(document):
         covered.update(indices)
         local_lines = [lines[i] for i in indices]
         for gid, point in enumerate(block["grammar"]):
+            if document["schema_version"] == "0.6.0":
+                _validate_lesson(point)
             if type(point["id"]) is not int or point["id"] != gid:
                 raise ValueError("语法 id 必须与块内位置一致")
             pairs = _pairs(point["word_refs"], local_lines, "words")

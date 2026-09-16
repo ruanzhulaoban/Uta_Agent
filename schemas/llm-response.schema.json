@@ -1,0 +1,108 @@
+{
+  "type": "object",
+  "properties": {
+    "words": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "line_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "word_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gloss": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "line_index",
+          "word_index",
+          "gloss"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "grammar": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "pattern": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "meaning": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "connection": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "context_usage": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "word_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "line_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "word_index": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "line_index",
+                "word_index"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "text",
+          "pattern",
+          "meaning",
+          "connection",
+          "explanation",
+          "context_usage",
+          "word_refs"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "words",
+    "grammar"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -3,9 +3,10 @@ from copy import deepcopy
 from .annotator import Annotator
 from .gloss_dict import GlossDict
 from .blocks import split_blocks
+from .text_kind import is_latin_text
 from .schemas import INPUT_SCHEMA, FINAL_SCHEMA, validate, validate_result, grammar_key
 
-SCHEMA_VERSION = "0.5.0"
+SCHEMA_VERSION = "0.6.0"
 PENDING_GLOSS = "待补充"
 
 class Glossifier:
@@ -32,6 +33,9 @@ class Glossifier:
             line["index"] = li
             for wi, word in enumerate(line["words"]):
                 word.update(index=wi, grammar_ids=[])
+                if is_latin_text(word["surface"]):
+                    word.update(reading=word["surface"], jlpt=None, gloss="", source="symbol")
+                    continue
                 entry = self.dictionary.lookup(surface=word["surface"], reading=word["reading"],
                     pos=word["pos"], base=word.get("base")) if self.dictionary is not None else None
                 if entry and entry.get("meaning"):
@@ -51,7 +55,7 @@ class Glossifier:
                              "output_mode": None, "error": None}}
             doc["blocks"].append(block)
             local = [doc["lines"][i] for i in indices]
-            if self.llm is None or not any(line["words"] for line in local):
+            if self.llm is None or not any(w["source"] != "symbol" for line in local for w in line["words"]):
                 continue
             payload = {
                 "text": "\n".join(line["text"] for line in local),
@@ -72,6 +76,9 @@ class Glossifier:
                     tuple(sorted((r["line_index"], r["word_index"]) for r in g["word_refs"])),
                     g["pattern"], g["text"], g["meaning"]))
                 for point in points:
+                    if any(is_latin_text(local[r["line_index"]]["words"][r["word_index"]]["surface"])
+                           for r in point["word_refs"]):
+                        continue
                     key = grammar_key(point, indices)
                     if key in seen:
                         continue
