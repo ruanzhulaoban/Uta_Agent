@@ -12,6 +12,38 @@ const make = (tag, cls, text) => {
   if (text !== undefined) node.textContent = text;
   return node;
 };
+// Older exported books may contain punctuation cards. Keep the lyric text intact.
+document.querySelectorAll('.word-note:not([data-custom])').forEach(card => {
+  if (!/^[\p{P}\p{S}\s]+$/u.test(card.dataset.surface || '')) return;
+  document.querySelectorAll('a.word').forEach(link => {
+    if (link.getAttribute('href') === '#' + card.id) {
+      const span = make('span',null,card.dataset.surface);
+      span.id = link.id;
+      link.replaceWith(span);
+    }
+  });
+  card.remove();
+});
+document.getElementById('return-to-reading')?.remove();
+const returnButton = make('button','return-to-reading','↑ 返回刚才阅读处');
+returnButton.id = 'return-to-reading';
+returnButton.type = 'button';
+returnButton.hidden = true;
+document.body.appendChild(returnButton);
+let readingOrigin = null;
+returnButton.addEventListener('click',() => {
+  if (!readingOrigin) return;
+  const origin = document.getElementById(readingOrigin.id);
+  const top = origin ? window.scrollY + origin.getBoundingClientRect().top - readingOrigin.offset : readingOrigin.scrollY;
+  window.scrollTo({top,behavior:'instant'});
+  if (origin) {
+    origin.focus({preventScroll:true});
+    origin.classList.remove('reading-return-target');
+    void origin.offsetWidth;
+    origin.classList.add('reading-return-target');
+  }
+  returnButton.hidden = true;
+});
 const status = (song, text) => { song.querySelector('.editor-status').textContent = text; };
 function sanitize(raw) {
   if (!raw || raw.version !== 1) throw new Error('state');
@@ -156,13 +188,16 @@ document.addEventListener('click',e => {
   if (button) filterVocabulary(button.dataset.vocabLevel);
   const remove = e.target.closest('.remove-word');
   if (remove) {
+    e.preventDefault();
+    const scrollY = window.scrollY;
+    remove.blur();
     const card = remove.closest('.word-note');
     state.removed = [...new Set([...state.removed,card.id])];
     persist(); filterVocabulary(currentLevel);
     const song = card.closest('.song');
     status(song,'已移除“' + card.dataset.surface + '”；可在“已移除”中恢复。');
-    song.querySelector('.removed-panel').open=true;
-    song.querySelector('.removed-panel summary').focus();
+    window.scrollTo({top:scrollY,behavior:'instant'});
+    requestAnimationFrame(() => window.scrollTo({top:scrollY,behavior:'instant'}));
   }
   const restore = e.target.closest('[data-restore-word]');
   if (restore) {
@@ -172,7 +207,16 @@ document.addEventListener('click',e => {
     song.querySelector('.removed-panel summary').focus();
   }
   const a=e.target.closest('a[href^="#"]');
-  if (a && !revealTarget(document.getElementById(a.getAttribute('href').slice(1)))) e.preventDefault();
+  if (a) {
+    const target = document.getElementById(a.getAttribute('href').slice(1));
+    if (a.closest('.lyric-text') && target?.closest('.annotations')) {
+      readingOrigin = {id:a.id,offset:a.getBoundingClientRect().top,scrollY:window.scrollY};
+      returnButton.hidden = false;
+    } else if (readingOrigin && a.closest('.annotations') && target?.closest('.annotations')) {
+      returnButton.hidden = false;
+    }
+    if (!revealTarget(target)) e.preventDefault();
+  }
 });
 document.querySelectorAll('.add-word-form').forEach(form => {
   form.addEventListener('submit',e => {
@@ -212,6 +256,8 @@ window.addEventListener('hashchange',() => {
 document.getElementById('download-book').addEventListener('click',() => {
   persist();
   const clone=document.documentElement.cloneNode(true);
+  clone.querySelector('#return-to-reading')?.remove();
+  clone.querySelectorAll('.reading-return-target').forEach(n => n.classList.remove('reading-return-target'));
   // Embed data as inert JSON; never interpolate user input into executable JavaScript.
   clone.querySelector('#vocab-state').textContent=JSON.stringify(state).replace(/</g,'\\u003c');
   clone.querySelectorAll('.add-word-form').forEach(form => form.reset());

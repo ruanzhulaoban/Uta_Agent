@@ -88,3 +88,10 @@ h4{font:500 20px/1.6 var(--serif);margin:0 0 12px}.grammar-list p{font-size:14px
 .vocab-editor[hidden],.removed-panel[hidden],#download-book[hidden],#save-status[hidden],.remove-word[hidden],.removed-empty[hidden]{display:none!important}
 @media(max-width:640px){.editor-fields{grid-template-columns:1fr}.toolbar>div{flex-wrap:wrap}}
 @media print{.vocab-editor,.removed-panel,.editor-status,.remove-word,#save-status{display:none!important}}
+.return-to-reading{position:fixed;right:24px;bottom:24px;z-index:1000;background:var(--accent);color:var(--paper);border:0;border-radius:28px;padding:14px 22px;font:600 14px var(--sans);box-shadow:0 5px 24px #0003;cursor:pointer}
+.return-to-reading[hidden]{display:none!important}
+.reading-return-target{animation:reading-return-flash 2s ease-out}
+@keyframes reading-return-flash{from{background:#f5d986;outline:3px solid #f5d986}to{background:transparent;outline:3px solid transparent}}
+@media(max-width:640px){.return-to-reading{right:12px;bottom:12px;padding:12px 18px}}
+@media(prefers-reduced-motion:reduce){.reading-return-target{animation:none;background:#f5d986}}
+@media print{.return-to-reading{display:none!important}}

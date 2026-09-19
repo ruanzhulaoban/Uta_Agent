@@ -1,5 +1,13 @@
 # utaagent — 日语歌词学习工具
 
+### 书架合并与阅读定位
+
+书架右上角 `...` → “合并两本歌词本”：选择两本原书、排列顺序和合集名称，生成一本新合集，原书保留。不调用模型，支持已导入的 utaagent HTML（普通网页不支持）；合集也可以继续合并。目录、歌曲编号、词汇和语法锚点会重新分配，已嵌入 HTML 的手动词条及移除状态会一起保留。尚在浏览器本地存储里的修改，请先在阅读页下载 HTML，再导入书架并选择该版本。
+
+从歌词点击词汇后，右下角显示“返回刚才阅读处”，查看相关语法时按钮继续保留；点击可回到原来位置并高亮原词。移除词条保持当前滚动位置，不自动展开“已移除”栏。全角逗号等纯标点不会进入词语手帖，即使上游词性误标也会过滤。
+
+在 GUI 中打开或另存已有 utaagent 手帖时，会更新其中的阅读脚本和样式，保留原有书籍 ID、正文及嵌入的词条修改；这不会重新调用模型。独立存放在其他目录的旧 HTML 需要先导入书架再打开，才能应用新交互。
+
 混合歌词中的英语、法语等拉丁字母词保留原文，不添加注音、中文释义、JLPT 或词语手帖卡片，也不参与语法引用。纯拉丁字母歌词块不调用模型；混合块仍保留完整原文作为日语分析上下文。为兼容现有 0.6.0 结构，这些词使用 `source: "symbol"` 表示仅展示，`gloss` 为空、`jlpt` 为 null。此规则应用于新生成的标注，已有 HTML 需要重新生成。MeCab 未登录词不再读取可能缺失的读音字段。
 
 输入原始歌词或已分词、注音和 JLPT 标注的 JSON，输出中文释义与跨行语法关联。
@@ -7,14 +15,20 @@
 
 ## 安装与运行
 
-Python >= 3.9：
+普通用户（Windows 10/11 x64）只需安装 **标准版 Python 3.10–3.14（64 位）**，然后完整解压项目，双击 `start_gui.vbs`（或 `start_gui.bat`）。首次启动会校验随附依赖并自动建立项目内的 `.runtime` 环境，可能需要稍等；之后直接打开界面。无需手动运行 pip、安装 MeCab 或 MSYS2，也无需联网下载运行依赖。请将项目解压到有写入权限的目录，勿直接在压缩包中运行。
+
+项目的 `vendor/` 已包含 Python 离线安装包、MeCab、UTF-8 IPADIC 及必需 DLL；发布和复制时必须保留整个目录。界面和分词可离线使用，模型分析仍需联网并填写自己的 API Key；选择“仅词典模式”即可不调用模型。
+
+若双击未识别 Python，可运行 `python gui.py`。自动安装失败会显示错误，安装详情见 `.runtime/setup.log`；关闭程序后重新启动可重试。项目自己的依赖不会安装到全局 Python。移动项目后会重新检查环境；若更换或卸载了原来的 Python，可删除 `.runtime` 后重新启动，书架不受影响。当前离线包不支持 32 位、ARM 原生 Python 或自由线程版 Python。
+
+开发者/命令行用法（自行管理环境，Python >= 3.9）：
 
 ```bat
 python -m pip install -r requirements.txt
 python main.py samples/annotated.json --input-format json --no-llm
 ```
 
-原始文本模式需要 MeCab + IPADIC，可用 --mecab 或 MECAB_PATH 指定。
+Windows 原始文本模式默认使用项目内置的 MeCab + IPADIC，可用 --mecab 或 MECAB_PATH 指定其他程序，MECAB_DICDIR 指定其他词典。非 Windows 系统需自行安装相应平台的分词工具。
 已分词 JSON 模式不需要 MeCab。JLPT 数据来源与许可见 data/jlpt/LICENSE.txt。
 输入格式定义在 schemas/input.schema.json；原始行和词序不变，空行保留。
 输入只接受上游标注字段，不接受重复增强的输出；未知字段会被拒绝。
@@ -274,7 +288,9 @@ python export_html.py samples/user_lyrics.detailed.json -o exports/book-detailed
 
 ## 桌面图形界面（Windows）
 
-双击项目根目录的 `start_gui.bat`，或运行 `python gui.py`。首次安装桌面依赖：`python -m pip install -r requirements-gui.txt`。界面使用 PySide6 / Qt Quick，分词仍需 MeCab。
+双击项目根目录的 `start_gui.vbs` 启动，不会弹出黑色命令行窗口。启动器查找已安装的 Python，并自动使用项目专用的 `.runtime` 环境；首次运行从 `vendor/wheels` 离线安装依赖。启动失败时显示错误对话框；需要详细诊断时运行 `python gui.py`。`start_gui.bat` 仍可使用，但可能短暂闪现命令行窗口。界面使用 PySide6 / Qt Quick，分词程序与词典已内置，设置中的 MeCab 路径通常留空即可。
+
+维护者发布时请包含 `vendor/`、`bootstrap.py` 和 `requirements-offline.txt`，不要打包 `.runtime/`、个人 `data/desktop/`、缓存或密钥。离线包版本固定，支持 Python 3.10–3.14；维护者可运行 `python scripts/prepare_wheels.py` 重新下载依赖（此维护步骤需要联网）。来源和第三方许可见 `vendor/README.md`。启动完成后，可用 `.runtime\py312\Scripts\python.exe scripts\verify_offline.py` 验证离线依赖、独立分词、中文路径迁移、生成与 QML 加载（按实际 Python 版本替换 `py312`）。
 
 1. 在“生成手帖”选择 Qwen、DeepSeek 或自定义兼容接口；接口地址和模型名均可修改，模型名以服务商实际提供为准。
 2. 填写 API Key，点击“保存密钥到环境变量”。密钥保存到 Windows 当前用户环境变量，后续启动自动读取。Qwen 默认使用 DASHSCOPE_API_KEY，DeepSeek 使用 DEEPSEEK_API_KEY；自定义变量名须以 API_KEY 结尾。更换密钥后再次保存即可。其他已打开的终端可能需要重启。

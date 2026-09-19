@@ -161,6 +161,7 @@ ApplicationWindow {
                         onClicked: shelfMenu.open()
                         Menu {
                             id: shelfMenu
+                            MenuItem { text: "合并两本歌词本"; enabled: !backend.trash && backend.books.length >= 2; onTriggered: mergeDialog.open() }
                             MenuItem { text: backend.trash ? "返回书架" : "查看回收站"; onTriggered: backend.toggleTrash() }
                             MenuItem { text: "刷新"; onTriggered: backend.refresh() }
                         }
@@ -220,6 +221,30 @@ ApplicationWindow {
                     }
                 }
                 Caption { Layout.fillWidth: true; wrapMode: Text.Wrap; text: "词条修改后，在阅读页下载 HTML，再导入书架即可收藏新版本。" }
+            }
+        }
+    }
+
+    Sheet {
+        id: mergeDialog
+        objectName: "mergeDialog"
+        title: "合并歌词本"
+        width: 540
+        onOpened: { firstBook.currentIndex=0; secondBook.currentIndex=1; mergeTitle.text="我的歌词合集" }
+        ColumnLayout {
+            width: parent.width
+            spacing: 12
+            Caption { text: "第一本（排在前面）" }
+            ComboBox { id: firstBook; objectName: "mergeFirst"; Layout.fillWidth: true; model: backend.books; textRole: "title"; valueRole: "id" }
+            Caption { text: "第二本（接在后面）" }
+            ComboBox { id: secondBook; objectName: "mergeSecond"; Layout.fillWidth: true; model: backend.books; textRole: "title"; valueRole: "id" }
+            Field { id: mergeTitle; objectName: "mergeTitle"; Layout.fillWidth: true; placeholderText: "合集名称" }
+            Caption { Layout.fillWidth: true; wrapMode: Text.Wrap; text: "生成一本新的合集，原书保留。支持 utaagent 导出的 HTML。浏览器里的词条修改，请先下载 HTML 并导入书架。" }
+            SoftButton {
+                objectName: "mergeConfirm"
+                text: "生成合集"; accent: true; Layout.fillWidth: true
+                enabled: firstBook.currentIndex >= 0 && secondBook.currentIndex >= 0 && firstBook.currentValue !== secondBook.currentValue && mergeTitle.text.trim().length > 0
+                onClicked: { if (backend.mergeBooks(firstBook.currentValue,secondBook.currentValue,mergeTitle.text)) mergeDialog.close() }
             }
         }
     }

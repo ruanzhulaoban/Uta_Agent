@@ -138,10 +138,27 @@ class Backend(QObject):
         self.changed.emit()
         self.refresh()
 
+    @Slot(str, str, str, result=bool)
+    def mergeBooks(self, first, second, title):
+        try:
+            self.library.merge(first, second, title, self._settings["theme"])
+            self._trash = False
+            self.refresh()
+            self.changed.emit()
+            self.notice.emit("合集已加入书架，两本原书已保留。")
+            return True
+        except ValueError as exc:
+            self.notice.emit(str(exc))
+        except OSError:
+            self.notice.emit("合并失败，请检查原书是否存在及书架目录权限。")
+        return False
+
     @Slot(str, str, str)
     def bookAction(self, action, book_id, title):
         try:
             path = self.library.path(book_id, self._trash) / "book.html"
+            if action in ("open", "export"):
+                path = self.library.update_reader(book_id, self._trash)
             if action == "open":
                 if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.resolve()))):
                     raise OSError()

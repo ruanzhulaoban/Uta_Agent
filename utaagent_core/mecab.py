@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -25,6 +26,7 @@ _UNKNOWN_FORMAT = r"%m\t%f[0]\t%f[1]\t%f[2]\t%f[3]\t%f[4]\t%f[5]\t%m\t*\t*\n"
 
 # EOS 哨兵：用不易与歌词冲突的字符串，便于按行切分结果。
 _EOS = "__UTAAGENT_EOS__"
+_BUNDLED = Path(__file__).resolve().parent.parent / "vendor" / "mecab"
 
 _KNOWN_MECAB_PATHS = [
     r"C:/msys64/mingw64/bin/mecab.exe",
@@ -59,10 +61,12 @@ class Token:
 
 
 def find_mecab() -> Optional[str]:
-    """按 环境变量 -> 已知路径 -> PATH 的顺序查找 mecab 可执行文件。"""
+    """显式环境变量优先，其次项目内置版本，最后兼容系统安装。"""
     env = os.environ.get("MECAB_PATH") or os.environ.get("MECAB_BIN")
     if env and os.path.isfile(env):
         return env
+    if os.name == "nt" and (_BUNDLED / "bin/mecab.exe").is_file():
+        return str(_BUNDLED / "bin/mecab.exe")
     for path in _KNOWN_MECAB_PATHS:
         if os.path.isfile(path):
             return path
@@ -74,6 +78,8 @@ def find_dicdir() -> Optional[str]:
     env = os.environ.get("MECAB_DICDIR")
     if env and os.path.isdir(env):
         return env
+    if (_BUNDLED / "dic/ipadic/sys.dic").is_file():
+        return str(_BUNDLED / "dic/ipadic")
     for path in [
         r"C:/msys64/mingw64/lib/mecab/dic/ipadic",
         r"C:/Program Files/MeCab/dic/ipadic",
@@ -96,6 +102,9 @@ class MeCab:
 
     def _command(self) -> List[str]:
         cmd = [self.path]
+        if Path(self.path).resolve() == (_BUNDLED / "bin/mecab.exe").resolve():
+            # Do not read the build machine's absolute mecabrc path.
+            cmd += ["-r", str(_BUNDLED / "etc/mecabrc")]
         if self.dicdir:
             cmd += ["-d", self.dicdir]
         cmd += [
@@ -122,6 +131,7 @@ class MeCab:
             encoding="utf-8",
             errors="replace",
             timeout=60,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
         if proc.returncode != 0:
             raise RuntimeError(

@@ -63,6 +63,29 @@ class Library:
         target.parent.mkdir(parents=True, exist_ok=True)
         source.rename(target)
 
+    def merge(self, first, second, title, theme="bunko"):
+        from .book_merge import merge_books
+        if first == second:
+            raise ValueError("请选择两本不同的歌词本。")
+        sources = [(self.path(book_id) / "book.html").read_text(encoding="utf-8-sig")
+                   for book_id in (first, second)]
+        html = merge_books(sources, title, theme)
+        return self.add(title.strip(), html)
+
+    def update_reader(self, book_id, trash=False):
+        from .book_merge import refresh_reader
+        path = self.path(book_id, trash) / "book.html"
+        original = path.read_text(encoding="utf-8-sig")
+        try:
+            updated = refresh_reader(original)
+        except ValueError:
+            return path  # Ordinary imported HTML remains readable without conversion.
+        if updated != original:
+            temp = path.with_suffix(".tmp")
+            temp.write_text(updated, encoding="utf-8")
+            temp.replace(path)
+        return path
+
 def generate(library, text, title, settings, api_key, status):
     from .annotator import Annotator
     from .mecab import MeCab

@@ -3,7 +3,7 @@ from copy import deepcopy
 from .annotator import Annotator
 from .gloss_dict import GlossDict
 from .blocks import split_blocks
-from .text_kind import is_latin_text
+from .text_kind import is_plain_text
 from .schemas import INPUT_SCHEMA, FINAL_SCHEMA, validate, validate_result, grammar_key
 
 SCHEMA_VERSION = "0.6.0"
@@ -33,7 +33,7 @@ class Glossifier:
             line["index"] = li
             for wi, word in enumerate(line["words"]):
                 word.update(index=wi, grammar_ids=[])
-                if is_latin_text(word["surface"]):
+                if is_plain_text(word["surface"]):
                     word.update(reading=word["surface"], jlpt=None, gloss="", source="symbol")
                     continue
                 entry = self.dictionary.lookup(surface=word["surface"], reading=word["reading"],
@@ -76,7 +76,7 @@ class Glossifier:
                     tuple(sorted((r["line_index"], r["word_index"]) for r in g["word_refs"])),
                     g["pattern"], g["text"], g["meaning"]))
                 for point in points:
-                    if any(is_latin_text(local[r["line_index"]]["words"][r["word_index"]]["surface"])
+                    if any(is_plain_text(local[r["line_index"]]["words"][r["word_index"]]["surface"])
                            for r in point["word_refs"]):
                         continue
                     key = grammar_key(point, indices)

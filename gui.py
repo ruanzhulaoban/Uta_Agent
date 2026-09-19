@@ -4,6 +4,11 @@ import os
 from pathlib import Path
 
 def main():
+    if os.name == "nt":
+        from bootstrap import launch_if_needed
+        child_result = launch_if_needed()
+        if child_result is not None:
+            return child_result
     try:
         import PySide6
         dll_directory = os.add_dll_directory(str(Path(PySide6.__file__).parent)) if os.name == "nt" else None
@@ -14,6 +19,8 @@ def main():
         from PySide6.QtQuickControls2 import QQuickStyle
         from utaagent_core.desktop import Backend
     except ImportError:
+        if os.name == "nt":
+            raise RuntimeError("运行依赖无法加载。请关闭程序，删除项目 .runtime 目录后重新启动，以自动重建环境。")
         print("请先运行：python -m pip install -r requirements-gui.txt")
         return 1
     app = QApplication(sys.argv)

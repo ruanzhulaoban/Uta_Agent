@@ -1,4 +1,2 @@
-@echo off
-cd /d "%~dp0"
-python gui.py
-if errorlevel 1 pause
+@echo off
+wscript.exe "%~dp0start_gui.vbs"

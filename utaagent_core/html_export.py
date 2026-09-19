@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 from .kana import katakana_to_hiragana
 from .schemas import validate_export_document
+from .text_kind import is_plain_text
 
 THEMES = ("bunko", "cards", "lyrics")
 ASSETS = Path(__file__).with_name("templates")
@@ -89,7 +90,7 @@ def _vocabulary(doc, sid):
     groups = {}
     for li, line in enumerate(doc["lines"]):
         for wi, word in enumerate(line["words"]):
-            if word["source"] == "symbol" or not line["text"].strip():
+            if word["source"] == "symbol" or is_plain_text(word["surface"]) or not line["text"].strip():
                 continue
             base = (word.get("base") or "").strip()
             lemma = base if base and base != "*" else word["surface"]
@@ -162,7 +163,7 @@ def _song(song, number):
             pieces.append(esc(line["text"][cursor:at]))
             cursor = at + len(surface)
             wid = sid + "-l" + str(li) + "-w" + str(wi)
-            if word["source"] == "symbol":
+            if word["source"] == "symbol" or is_plain_text(surface):
                 pieces.append(esc(surface))
                 continue
             pending += word["source"] == "pending"
@@ -185,7 +186,7 @@ def _song(song, number):
                 wi = ref["word_index"]
                 w = doc["lines"][li]["words"][wi]
                 # Symbol references point to their line, which always has a visible anchor.
-                target = sid + "-line-" + str(li) if w["source"] == "symbol" else sid + "-l" + str(li) + "-w" + str(wi)
+                target = sid + "-line-" + str(li) if w["source"] == "symbol" or is_plain_text(w["surface"]) else sid + "-l" + str(li) + "-w" + str(wi)
                 refs.append('<a href="#' + target + '">' + esc(w["surface"]) + ' <small>L' + str(li + 1) + '</small></a>')
             grammar.append('<li id="' + _grammar_anchor(sid, gid) + '"><h4 lang="ja">' +
                 esc(point["pattern"]) + '</h4>' + _grammar_lesson(point) + '<div class="grammar-refs">' + " ".join(refs) + '</div></li>')
@@ -218,11 +219,17 @@ def render_book(songs, title="言葉の余白", subtitle="日语歌词学习手�
             raise ValueError("歌曲标题不能为空")
         if not isinstance(song.get("artist", ""), str):
             raise ValueError("artist 必须为字符串")
+    body = "".join(_song(s, i) for i, s in enumerate(songs, 1))
+    book_id = hashlib.sha256(json.dumps([title, songs], ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    return render_layout(songs, body, title, subtitle, theme, book_id)
+
+
+def render_layout(songs, body, title, subtitle, theme, book_id, state=None):
+    """Shared shell for fresh annotations and merged, already edited HTML books."""
     contents = "".join('<li><a href="#song-' + str(i) + '"><span>' + str(i).zfill(2) +
                        '</span><strong>' + esc(s["title"]) + '</strong><span aria-hidden="true">↗</span></a></li>'
                        for i, s in enumerate(songs, 1))
-    body = "".join(_song(s, i) for i, s in enumerate(songs, 1))
-    book_id = hashlib.sha256(json.dumps([title, songs], ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    state_json = json.dumps(state or {"version": 1, "revision": 0, "custom": [], "removed": []}, ensure_ascii=False).replace("<", "\\u003c")
     css = (ASSETS / "book.css").read_text(encoding="utf-8")
     js = (ASSETS / "book.js").read_text(encoding="utf-8")
     options = "".join('<option value="' + key + '"' + (' selected' if theme == key else '') + '>' + label + '</option>'
@@ -237,7 +244,7 @@ def render_book(songs, title="言葉の余白", subtitle="日语歌词学习手�
             '</p><div class="cover-mark" aria-hidden="true">詩</div><div class="cover-bottom"><span>読む · 知る · 味わう</span><span>' +
             str(len(songs)).zfill(2) + ' SONGS</span></div></section><nav class="contents" id="contents" aria-label="目录">' +
             '<p class="eyebrow">CONTENTS</p><h2>目次 <small>目录</small></h2><ol>' + contents +
-            '</ol></nav>' + body + '</main><footer class="book-footer">UTAAGENT · 歌词学习手帖</footer><script id="vocab-state" type="application/json">{"version":1,"revision":0,"custom":[],"removed":[]}</script><script>' +
+            '</ol></nav>' + body + '</main><footer class="book-footer">UTAAGENT · 歌词学习手帖</footer><script id="vocab-state" type="application/json">' + state_json + '</script><script>' +
             js + '</script></body></html>')
 
 def load_songs(paths):
